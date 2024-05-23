@@ -1,0 +1,9 @@
+# 应用服务 WEB 访问端口
+server:
+  port: 8123
+  servlet:
+    context-path: /api
+api:
+  client:
+    access-key: chenxin
+    secret-Key: 77788

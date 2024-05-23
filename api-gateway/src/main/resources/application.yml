@@ -1,0 +1,38 @@
+server:
+  port: 8090
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: api_route
+        uri: http://localhost:8123
+        predicates:
+          - Path=/api/**
+#        filters:
+#          - AddRequestHeader=chen, 777
+#          - AddRequestParameter=name, dog
+#          - name: CircuitBreaker
+#            args:
+#              name: myCircuitBreaker
+#              fallbackUri: forward:/fallback
+#      - id: yupi-fallback
+#        uri: http://yupi.icu
+#        predicates:
+#        - Path=/fallback
+logging:
+  level:
+    org:
+      springframework:
+        cloud:
+          gateway: trace
+dubbo:
+  application:
+    name: api-gateway
+    logger: slf4j
+  protocol:
+    name: dubbo
+    port: -2
+  registry:
+    address: nacos://localhost:8848?username=nacos&password=nacos
+    parameters:
+      namespace: chen
