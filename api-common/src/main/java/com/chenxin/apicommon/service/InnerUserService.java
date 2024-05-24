@@ -15,9 +15,8 @@ public interface InnerUserService {
      * @author fangchenxin
      * @date 2024/5/22 20:37
      * @param accessKey
-     * @param secretKey
      * @return model.entity.User
      */
-    User getInvokeUser(String accessKey, String secretKey);
+    User getInvokeUser(String accessKey);
 
 }

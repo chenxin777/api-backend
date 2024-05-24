@@ -17,4 +17,14 @@ public interface InnerUserInterfaceInfoService {
      */
     boolean invokeCount(long interfaceInfoId, long userId);
 
+    /**
+     * @description 判断接口是否可用（调用次数）
+     * @author fangchenxin
+     * @date 2024/5/24 15:25
+     * @param interfaceInfoId
+     * @param userId
+     * @return boolean
+     */
+    boolean isValid(long interfaceInfoId, long userId);
+
 }

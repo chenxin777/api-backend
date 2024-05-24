@@ -31,7 +31,7 @@ public class InnerInterfaceInfoServiceImpl implements InnerInterfaceInfoService 
         QueryWrapper<InterfaceInfo> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("url", path);
         queryWrapper.eq("method", method);
-        InterfaceInfo interfaceInfo = (InterfaceInfo) interfaceInfoMapper.selectOne(queryWrapper);
+        InterfaceInfo interfaceInfo = interfaceInfoMapper.selectOne(queryWrapper);
         if (interfaceInfo == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
         }

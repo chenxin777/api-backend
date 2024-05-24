@@ -3,8 +3,6 @@ package com.chenxin.apibackend.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.chenxin.apibackend.model.dto.userinterfaceinfo.UserInterfaceInfoQueryRequest;
-import com.chenxin.apicommon.model.entity.InterfaceInfo;
-import com.chenxin.apicommon.model.entity.User;
 import com.chenxin.apicommon.model.entity.UserInterfaceInfo;
 
 /**

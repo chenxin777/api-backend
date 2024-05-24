@@ -1,7 +1,13 @@
 package com.chenxin.apigateway;
 
 import com.chenxin.apiclientsdk.utils.SignUtils;
+import com.chenxin.apicommon.model.entity.InterfaceInfo;
+import com.chenxin.apicommon.model.entity.User;
+import com.chenxin.apicommon.service.InnerInterfaceInfoService;
+import com.chenxin.apicommon.service.InnerUserInterfaceInfoService;
+import com.chenxin.apicommon.service.InnerUserService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.reactivestreams.Publisher;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -20,7 +26,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -34,7 +39,19 @@ import java.util.List;
 @Component
 public class CustomGlobalFilter implements GlobalFilter, Ordered {
 
+    @DubboReference
+    private InnerUserInterfaceInfoService innerUserInterfaceInfoService;
+
+    @DubboReference
+    private InnerUserService innerUserService;
+
+    @DubboReference
+    private InnerInterfaceInfoService innerInterfaceInfoService;
+
     private static final List<String> IP_WHITE_LIST = Arrays.asList("127.0.0.1");
+
+    public static final String INTERFACE_HOST = "http://localhost:8123";
+
     /**
      * @description 全局过滤
      * @author fangchenxin
@@ -64,10 +81,16 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         HttpHeaders headers = request.getHeaders();
         String body = headers.getFirst("body");
 
-        // 校验accessKey TODO
+        // 校验accessKey
         String accessKey = headers.getFirst("accessKey");
-        if (!accessKey.equals("chenxin")) {
-            handleNoAuth(response);
+        User invokeUser = null;
+        try {
+             invokeUser = innerUserService.getInvokeUser(accessKey);
+        } catch (Exception ex) {
+            log.error("getInvokeUser Error", ex);
+        }
+        if (invokeUser == null) {
+            return handleNoAuth(response);
         }
         // 校验随机数
         String nonce = headers.getFirst("nonce");
@@ -83,28 +106,30 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         }
         // 校验secretKey
         String sign = headers.getFirst("sign");
-        String serverSign = SignUtils.genSign(body, "77788");
-        if (!sign.equals(serverSign)) {
+        String serverSign = SignUtils.genSign(body, invokeUser.getSecreteKey());
+        if (sign == null || !sign.equals(serverSign)) {
             return handleNoAuth(response);
         }
-
         //3、请求的模拟接口是否存在？
         // 从数据库中查询模拟接口是否存在，以及请求方法是否匹配、还可以校验请求参数
-        // TODO
-
-
-        //4、请求转发，调用模拟接口
-        Mono<Void> filter = chain.filter(exchange);
-        log.info("响应：" + response.getStatusCode());
-        //5、调用成功，调用次数+1
-        // TODO
-
-        //6、调用失败，返回一个规范的错误码
-        if (response.getStatusCode() != HttpStatus.OK) {
-            handleInvokeError(response);
+        String path = INTERFACE_HOST + request.getPath().value();
+        String method = request.getMethod().toString();
+        InterfaceInfo interfaceInfo = null;
+        try {
+            interfaceInfo = innerInterfaceInfoService.getInterfaceInfo(path, method);
+        } catch (Exception ex) {
+            log.error("getInterfaceInfo Error", ex);
         }
-        //7、响应日志
-        return handleResponse(exchange, chain);
+        if (interfaceInfo == null) {
+            return handleInvokeError(response);
+        }
+        // 是否还有调用次数
+        Long interfaceInfoId = interfaceInfo.getId();
+        Long userId = invokeUser.getId();
+        if (!innerUserInterfaceInfoService.isValid(interfaceInfoId, userId)) {
+            return handleNoAuth(response);
+        }
+        return handleResponse(exchange, chain, interfaceInfoId, userId);
     }
 
     /**
@@ -115,7 +140,7 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
      * @param chain
      * @return reactor.core.publisher.Mono<java.lang.Void>
      */
-    public Mono<Void> handleResponse(ServerWebExchange exchange, GatewayFilterChain chain) {
+    public Mono<Void> handleResponse(ServerWebExchange exchange, GatewayFilterChain chain, long interfaceInfoId, long userId) {
         try {
             ServerHttpResponse originalResponse = exchange.getResponse();
             // 缓存数据的工厂
@@ -134,6 +159,11 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
                             return super.writeWith(
                                 fluxBody.map(dataBuffer -> {
                                     // TODO 统计调用次数
+                                    try {
+                                        innerUserInterfaceInfoService.invokeCount(interfaceInfoId, userId);
+                                    } catch (Exception ex) {
+                                        log.error("invokeCount error", ex);
+                                    }
                                     byte[] content = new byte[dataBuffer.readableByteCount()];
                                     dataBuffer.read(content);
                                     // 释放掉内存

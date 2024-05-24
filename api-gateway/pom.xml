@@ -17,6 +17,11 @@
     <dependencies>
         <dependency>
             <groupId>com.chenxin</groupId>
+            <artifactId>api-common</artifactId>
+            <version>0.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.chenxin</groupId>
             <artifactId>api-client-sdk</artifactId>
             <version>0.0.1</version>
         </dependency>
