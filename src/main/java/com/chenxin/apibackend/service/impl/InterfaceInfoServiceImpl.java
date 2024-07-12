@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author fangchenxin
@@ -79,6 +80,8 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         if (CollUtil.isEmpty(postList)) {
             return interfaceInfoVOPage;
         }
+        List<InterfaceInfoVO> interfaceInfoVOList = postList.stream().map(InterfaceInfoVO::objToVo).collect(Collectors.toList());
+        interfaceInfoVOPage.setRecords(interfaceInfoVOList);
         return interfaceInfoVOPage;
     }
 }
